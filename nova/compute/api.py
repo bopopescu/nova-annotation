@@ -1048,8 +1048,13 @@ class API(base.Base):
         strategy being performed and schedule the instance(s) for
         creation.
         """
+        """ 
+        验证所有的输入实例参数； 
+        发送要运行实例（'run_instance'）的请求消息到远程调度器； 
+        """ 
 
         # Normalize and setup some parameters
+        # generate_uid：随机生成一个uid值赋值给reservation_id；
         if reservation_id is None:
             reservation_id = utils.generate_uid('r')
         security_groups = security_groups or ['default']
@@ -1058,21 +1063,24 @@ class API(base.Base):
         block_device_mapping = block_device_mapping or []
         if not instance_type:
             instance_type = flavors.get_default_flavor()
-
+            
         if image_href:
             image_id, boot_meta = self._get_image(context, image_href)
         else:
             image_id = None
             boot_meta = self._get_bdm_image_metadata(
                 context, block_device_mapping, legacy_bdm)
-
+        # 
         self._check_auto_disk_config(image=boot_meta,
                                      auto_disk_config=auto_disk_config)
 
         handle_az = self._handle_availability_zone
         availability_zone, forced_host, forced_node = handle_az(context,
                                                             availability_zone)
-
+        ''' _
+        validate_and_provision_instance：验证所有的输入参数；  
+        返回要建立实例的各类信息；  
+        '''
         base_options, max_net_count = self._validate_and_build_base_options(
                 context,
                 instance_type, boot_meta, image_href, image_id, kernel_id,
