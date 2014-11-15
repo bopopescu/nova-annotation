@@ -1,0 +1,5 @@
+/__init__.pyc
+/client_wrapper.pyc
+/driver.pyc
+/ironic_states.pyc
+/patcher.pyc
