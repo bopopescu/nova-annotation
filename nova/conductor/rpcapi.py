@@ -412,7 +412,7 @@ class ComputeTaskAPI(object):
                           block_migration=block_migration,
                           disk_over_commit=disk_over_commit,
                           reservations=reservations)
-
+    # 创建虚拟机实例
     def build_instances(self, context, instances, image, filter_properties,
             admin_password, injected_files, requested_networks,
             security_groups, block_device_mapping, legacy_bdm=True):

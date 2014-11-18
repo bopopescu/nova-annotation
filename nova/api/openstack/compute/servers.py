@@ -770,29 +770,46 @@ class Controller(wsgi.Controller):
             msg = _("Instance could not be found")
             raise exc.HTTPNotFound(explanation=msg)
 
+    # 对外提供创建虚拟机实例的外部接口，nova-api.create()  
+    # 其中req是整个http报文内容，body就是REST中传递过来的参数  
+    # 整个方法的作用是将REST接口参数映射到内部接口compute-api.create()  
+    # 比如非常重要的环节，将image-flavor的id转换成虚拟机具体配置信息instanc_type
     @wsgi.response(202)
     @wsgi.serializers(xml=FullServerTemplate)
     @wsgi.deserializers(xml=CreateDeserializer)
     def create(self, req, body):
         """Creates a new server for a given user."""
+        # 判断body是否合法
         if not self.is_valid_body(body, 'server'):
             raise exc.HTTPUnprocessableEntity()
 
         context = req.environ['nova.context']
+        
+        # 获取服务内容
         server_dict = body['server']
+        # 获取管理员密码
         password = self._get_server_admin_password(server_dict)
 
         if 'name' not in server_dict:
             msg = _("Server name is not defined")
             raise exc.HTTPBadRequest(explanation=msg)
-
+        
         name = server_dict['name']
         self._validate_server_name(name)
         name = name.strip()
-
+        
+        # 获取Image的UUID
         image_uuid = self._image_from_req_data(body)
 
         personality = server_dict.get('personality')
+        
+        """
+        OpenStack镜像中可能要避免不了使用cloud-init制作镜像实现元数据的注入，
+        如：hostname、root用户密码、网络信息、用户信息等等，下面是cloud-init的初探。
+
+        其中cloud-init一个重要的应用是在OpenStack镜像中使用 Config Drive 数据源。
+        实现创建instances时hostname、root密码、用户信息、网络信息等metadata的注入。
+        """
         config_drive = None
         if self.ext_mgr.is_loaded('os-config-drive'):
             config_drive = server_dict.get('config_drive')

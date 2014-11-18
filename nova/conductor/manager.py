@@ -618,6 +618,10 @@ class ComputeTaskManager(base.Base):
             # check retry policy. Rather ugly use of instances[0]...
             # but if we've exceeded max retries... then we really only
             # have a single instance.
+            # (luzhq) 验证重试策略           
+            # 更新filter_properties中的重试属性，若当前为重试部署则同时检测当前
+            # 的重试次数是否超过最大重试次数，需要注意的是：这里使用instances[0]
+            # 表示如重试的话只会有一个instance重试
             scheduler_utils.populate_retry(filter_properties,
                 instances[0].uuid)
             hosts = self.scheduler_client.select_destinations(context,
@@ -642,7 +646,8 @@ class ComputeTaskManager(base.Base):
             # instance specific information
             bdms = objects.BlockDeviceMappingList.get_by_instance_uuid(
                     context, instance.uuid)
-
+            
+            # (luzhq) self.compute_rpcapi = compute_rpcapi.ComputeAPI()
             self.compute_rpcapi.build_and_run_instance(context,
                     instance=instance, host=host['host'], image=image,
                     request_spec=request_spec,

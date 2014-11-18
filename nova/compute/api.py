@@ -1050,11 +1050,10 @@ class API(base.Base):
         """
         """ 
         验证所有的输入实例参数； 
-        发送要运行实例（'run_instance'）的请求消息到远程调度器； 
+        发送要运行实例（'run_instance'）的请求消息到远程调度器；  
         """ 
 
         # Normalize and setup some parameters
-        # generate_uid：随机生成一个uid值赋值给reservation_id；
         if reservation_id is None:
             reservation_id = utils.generate_uid('r')
         security_groups = security_groups or ['default']
@@ -1078,8 +1077,9 @@ class API(base.Base):
         availability_zone, forced_host, forced_node = handle_az(context,
                                                             availability_zone)
         ''' _
-        validate_and_provision_instance：验证所有的输入参数；  
-        返回要建立实例的各类信息；  
+        # _validate_and_provision_instance：验证所有的输入参数；  
+        # 返回要建立实例的各类信息；  
+        # 这个方法中做了很多事，稍后会好好总结；  
         '''
         base_options, max_net_count = self._validate_and_build_base_options(
                 context,
@@ -1119,11 +1119,15 @@ class API(base.Base):
                 scheduler_hints, forced_host,
                 forced_node, instance_type,
                 base_options.get('pci_requests'))
-
+        
+        # 循环获取instances中每个实例action的一些相关信息（包括启动时间等）；  
+        # _record_action_start获取要启动的实例action的一些相关信息（包括启动时间等）；
         for instance in instances:
             self._record_action_start(context, instance,
                                       instance_actions.CREATE)
-
+        
+        # self.compute_task_api是conductor.ComputeTaskAPI()的一个对象
+        # Conductor的作用是隔离compute对数据库的直接操作
         self.compute_task_api.build_instances(context,
                 instances=instances, image=boot_meta,
                 filter_properties=filter_properties,
