@@ -817,7 +817,8 @@ class Controller(wsgi.Controller):
         injected_files = []
         if personality:
             injected_files = self._get_injected_files(personality)
-
+        
+        # 获取安全组，self.ext_mgr.is_loaded指的是是否加载安全组相关Controller
         sg_names = []
         if self.ext_mgr.is_loaded('os-security-groups'):
             security_groups = server_dict.get('security_groups')
