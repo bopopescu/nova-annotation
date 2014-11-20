@@ -1330,6 +1330,11 @@ class CloudController(object):
         return {'return': "true"}
 
     def run_instances(self, context, **kwargs):
+        """ 
+        准备实例，并且发送实例的信息和要运行实例的请求消息到远程调度器scheduler； 
+        实现实例的简历和运行，由调度器完成； 
+        """
+        # 设置最小、最大建立实例的数目
         min_count = int(kwargs.get('min_count', 1))
         max_count = int(kwargs.get('max_count', min_count))
         try:
@@ -1346,6 +1351,7 @@ class CloudController(object):
 
         client_token = kwargs.get('client_token')
         if client_token:
+            # 获取client token对应保留ID
             resv_id = self._resv_id_from_token(context, client_token)
             if resv_id:
                 # since this client_token already corresponds to a reservation
@@ -1354,19 +1360,34 @@ class CloudController(object):
                 return self._format_run_instances(context, resv_id)
 
         if kwargs.get('kernel_id'):
+            # _get_image：
+            # context：上下文信息
+            # kwargs['kernel_id']：从参数信息中获取'kernel_id'值
             kernel = self._get_image(context, kwargs['kernel_id'])
+            # 根据kernel['id']查询数据库中匹配的S3镜像数据，获取它的uuid属性，并返回 
+            # 返回匹配的db.models.S3Image.uuid给kwargs['kernel_id']
             kwargs['kernel_id'] = ec2utils.id_to_glance_id(context,
                                                            kernel['id'])
+        # 获取kwargs['ramdisk_id']指定的镜像image数据返回给ramdisk；  
+        # 获取更新的kwargs['ramdisk_id']；
         if kwargs.get('ramdisk_id'):
             ramdisk = self._get_image(context, kwargs['ramdisk_id'])
+            # 根据ramdisk['id']查询数据库中匹配的S3镜像数据，获取它的uuid属性，并返回；  
+            # 返回匹配的db.models.S3Image.uuid给kwargs['ramdisk_id']； 
             kwargs['ramdisk_id'] = ec2utils.id_to_glance_id(context,
                                                             ramdisk['id'])
+        # 循环获取每一个块设备映射；  
+        # 解析块设备映射bdm；        
         for bdm in kwargs.get('block_device_mapping', []):
             _parse_block_device_mapping(bdm)
-
+        
+        # 获取kwargs['image_id']指定的镜像image数据； 
         image = self._get_image(context, kwargs['image_id'])
+        # 根据image['id']查询数据库中匹配的S3镜像数据，获取它的uuid属性，并返回；  
+        # 返回匹配的db.models.S3Image.uuid给image_uuid；
         image_uuid = ec2utils.id_to_glance_id(context, image['id'])
 
+        # 获取镜像image的状态；
         if image:
             image_state = self._get_image_state(image)
         else:
@@ -1381,7 +1402,9 @@ class CloudController(object):
 
         flavor = objects.Flavor.get_by_name(context,
                                             kwargs.get('instance_type', None))
-
+        
+        # create：准备实例，并且发送实例的信息和要运行实例的请求消息到远程调度器scheduler；  
+        # 实现实例的简历和运行，由调度器完成，这部分代码实际上只是实现请求消息的发送；  
         (instances, resv_id) = self.compute_api.create(context,
             instance_type=obj_base.obj_to_primitive(flavor),
             image_href=image_uuid,

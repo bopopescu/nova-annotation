@@ -819,6 +819,7 @@ class Controller(wsgi.Controller):
             injected_files = self._get_injected_files(personality)
         
         # 获取安全组，self.ext_mgr.is_loaded指的是是否加载安全组相关Controller
+        # TODO (luzheqi) 扩展加载随后再研究
         sg_names = []
         if self.ext_mgr.is_loaded('os-security-groups'):
             security_groups = server_dict.get('security_groups')
@@ -834,14 +835,16 @@ class Controller(wsgi.Controller):
         if (self.ext_mgr.is_loaded('os-networks')
                 or utils.is_neutron()):
             requested_networks = server_dict.get('networks')
-
+        
+        # _为国际化函数
         if requested_networks is not None:
             if not isinstance(requested_networks, list):
                 expl = _('Bad networks format')
                 raise exc.HTTPBadRequest(explanation=expl)
             requested_networks = self._get_requested_networks(
                 requested_networks)
-
+        
+        # 判断IP地址的合法性
         (access_ip_v4, ) = server_dict.get('accessIPv4'),
         if access_ip_v4 is not None:
             self._validate_access_ipv4(access_ip_v4)
@@ -850,6 +853,7 @@ class Controller(wsgi.Controller):
         if access_ip_v6 is not None:
             self._validate_access_ipv6(access_ip_v6)
 
+        # 获取flavor（云主机）类型ID
         try:
             flavor_id = self._flavor_id_from_req_data(body)
         except ValueError as error:
@@ -956,7 +960,8 @@ class Controller(wsgi.Controller):
             _get_inst_type = flavors.get_flavor_by_flavor_id
             inst_type = _get_inst_type(flavor_id, ctxt=context,
                                        read_deleted="no")
-
+            
+            # 直接调用compute api 处理新建函数
             (instances, resv_id) = self.compute_api.create(context,
                         inst_type,
                         image_uuid,
