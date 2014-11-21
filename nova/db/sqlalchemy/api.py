@@ -5183,6 +5183,9 @@ def vol_usage_update(context, id, rd_req, rd_bytes, wr_req, wr_bytes,
 
 def s3_image_get(context, image_id):
     """Find local s3 image represented by the provided id."""
+    """ 
+    通过给定的image_id查找数据库中的S3格式的镜像；         
+    """ 
     result = model_query(context, models.S3Image, read_deleted="yes").\
                  filter_by(id=image_id).\
                  first()

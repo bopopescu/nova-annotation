@@ -94,6 +94,12 @@ class S3ImageService(object):
         return [self._translate_uuid_to_id(context, img) for img in images]
 
     def _translate_uuid_to_id(self, context, image):
+        """ 
+        调用glance_id_to_id方法转换image_copy['id']、image_copy['properties']['kernel_id']和image_copy['properties']['ramdisk_id']； 
+        更新image当中的相关属性，返回更新后的image数据； 
+        """  
+      
+        # 拷贝image对象给image_copy；
         image_copy = image.copy()
 
         try:
@@ -168,8 +174,21 @@ class S3ImageService(object):
         return self._translate_uuids_to_ids(context, images)
 
     def show(self, context, image_id):
+        """                     
+        # 调用之一传进来的参数： 
+        # context：上下文信息； 
+        # image_id=internal_id：实例镜像的ID值（从EC2 ID值变换了格式以后得到的）； 
+        """  
+        # id_to_glance_id：根据数据库内置ID值（实例或者说是镜像的ID）获取数据库中相应的UUID值，赋值给image_uuid； 
         image_uuid = ec2utils.id_to_glance_id(context, image_id)
+        
+        # 这里的service：service = service or glance.get_default_image_service()；  
+        # 获取service或者是GlanceImageService的对象（glance.get_default_image_service()指向的）；  
+        # 所以这里调用的还是/nova/image/glance.py中的show方法；  
         image = self.service.show(context, image_uuid)
+        
+        # 转换镜像中的image_uuid到image_id；  
+        # 更新image当中的相关属性，返回更新后的image数据；  
         return self._translate_uuid_to_id(context, image)
 
     @staticmethod

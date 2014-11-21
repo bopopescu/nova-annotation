@@ -1526,8 +1526,27 @@ class CloudController(object):
                                             instances)
 
     def _get_image(self, context, ec2_id):
+        """ 
+        获取ec2_id指定的镜像image元数据； 
+                      
+        # 调用之一传进来的参数： 
+        # context：上下文信息； 
+        # ec2_id=kwargs['kernel_id']：从参数信息中获取'kernel_id'值，kernel_id为虚拟机内核ID值 ； 
+        """  
         try:
+            # ec2_id_to_id:转换一个EC2的ID为一个实例（镜像）的ID（INT格式）；（主要是格式变换的问题）  
+            # 转换之后赋值给internal_id，也就是镜像image的内置ID； 
             internal_id = ec2utils.ec2_id_to_id(ec2_id)
+            
+            # show：这个方法完成了以下的工作：  
+            # 转换镜像image的ID值internal_id到image_uuid；  
+            # 根据给定的image_uuid从glance下载image元数据，并且转换为字典格式；  
+            # 转换镜像image中的image_uuid到新的image_id；  
+            # 更新image当中的相关属性，返回更新后的image数据；  
+              
+            # context：上下文信息；  
+            # internal_id：实例镜像的ID值（从EC2 ID值变换了格式以后得到的）；  
+            # 注：S3是EC2的存储平台，所以这里调用/nova/image/s3.py中的show方法；
             image = self.image_service.show(context, internal_id)
         except (exception.InvalidEc2Id, exception.ImageNotFound):
             filters = {'name': ec2_id}
@@ -1536,8 +1555,15 @@ class CloudController(object):
                 return images[0]
             except IndexError:
                 raise exception.ImageNotFound(image_id=ec2_id)
+        
+        # 通过ec2_id获取image_type；
         image_type = ec2_id.split('-')[0]
+        
+        # 通过image_type验证找到的镜像image是否是所要求找的镜像；  
+        # 如果通过ec2_id获取的image_type和通过获取的镜像image得到的image_type不一致；  
+        # 则引发异常，提示所要求找的镜像找不到；  
         if ec2utils.image_type(image.get('container_format')) != image_type:
+            # 返回获取的镜像数据；
             raise exception.ImageNotFound(image_id=ec2_id)
         return image
 
