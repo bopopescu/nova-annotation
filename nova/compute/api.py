@@ -715,8 +715,11 @@ class API(base.Base):
     def _checks_for_create_and_rebuild(self, context, image_id, image,
                                        instance_type, metadata,
                                        files_to_inject):
+        # 检测元数据配额
         self._check_metadata_properties_quota(context, metadata)
+        # 检测注入文件
         self._check_injected_file_quota(context, files_to_inject)
+        # 检测需要的镜像
         self._check_requested_image(context, image_id, image, instance_type)
 
     def _validate_and_build_base_options(self, context, instance_type,
@@ -734,6 +737,10 @@ class API(base.Base):
         """Verify all the input parameters regardless of the provisioning
         strategy being performed.
         """
+        """ 
+                            验证所有的输入参数； 
+                            返回要建立实例的各类信息； 
+        """        
         if availability_zone:
             available_zones = availability_zones.\
                 get_availability_zones(context.elevated(), True)
@@ -1049,8 +1056,8 @@ class API(base.Base):
         creation.
         """
         """ 
-        验证所有的输入实例参数； 
-        发送要运行实例（'run_instance'）的请求消息到远程调度器；  
+                            验证所有的输入实例参数； 
+                            发送要运行实例（'run_instance'）的请求消息到远程调度器；  
         """ 
 
         # Normalize and setup some parameters
@@ -1447,6 +1454,11 @@ class API(base.Base):
 
         Returns a tuple of (instances, reservation_id)
         """
+        """ 
+                            准备实例，并且发送实例的信息和要运行实例的请求消息到远程调度器scheduler； 
+                            实现实例的简历和运行，由调度器完成，这部分代码实际上只是实现请求消息的发送； 
+                            返回一个元组（实例或者是reservation_id的元组），元组里面的实例可以是“None”或者是实例字典的一个列表，这要取决于是否等待scheduler返回的信息； 
+        """
 
         self._check_create_policies(context, availability_zone,
                 requested_networks, block_device_mapping)
@@ -1456,7 +1468,9 @@ class API(base.Base):
             if utils.is_neutron():
                 self._check_multiple_instances_neutron_ports(
                     requested_networks)
-
+        
+        # 验证所有的输入实例参数；  
+        # 发送要运行实例（'run_instance'）的请求消息到远程调度器； 
         return self._create_instance(
                        context, instance_type,
                        image_href, kernel_id, ramdisk_id,

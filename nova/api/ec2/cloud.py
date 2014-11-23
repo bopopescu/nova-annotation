@@ -149,16 +149,25 @@ def _parse_block_device_mapping(bdm):
     BlockDevicedMapping.<N>.VirtualName
     => remove .Ebs and allow volume id in SnapshotId
     """
+    """ 
+             解析块设备映射bdm； 
+    """ 
     ebs = bdm.pop('ebs', None)
     if ebs:
         ec2_id = ebs.pop('snapshot_id', None)
         if ec2_id:
+            # 判断如果是快照；  
+            # 则根据获取的ec2_id值，从匹配的数据库信息中获取uuid值赋值给bdm['snapshot_id']，更新bdm中的相应数据；
             if ec2_id.startswith('snap-'):
                 bdm['snapshot_id'] = ec2utils.ec2_snap_id_to_uuid(ec2_id)
+            # 判断如果是volume；  
+            # 则根据获取的ec2_id值，从匹配的数据库信息中获取uuid值赋值给bdm['volume_id']，更新bdm中的相应数据；
             elif ec2_id.startswith('vol-'):
                 bdm['volume_id'] = ec2utils.ec2_vol_id_to_uuid(ec2_id)
             ebs.setdefault('delete_on_termination', True)
+        # 更新bdm；  
         bdm.update(ebs)
+    # 返回更新后的bdm；
     return bdm
 
 
@@ -1331,8 +1340,8 @@ class CloudController(object):
 
     def run_instances(self, context, **kwargs):
         """ 
-        准备实例，并且发送实例的信息和要运行实例的请求消息到远程调度器scheduler； 
-        实现实例的简历和运行，由调度器完成； 
+                            准备实例，并且发送实例的信息和要运行实例的请求消息到远程调度器scheduler； 
+                            实现实例的简历和运行，由调度器完成； 
         """
         # 设置最小、最大建立实例的数目
         min_count = int(kwargs.get('min_count', 1))
