@@ -559,6 +559,7 @@ class API(base.Base):
 
     def _ensure_auto_disk_config_is_valid(self, auto_disk_config_img,
                                           auto_disk_config, image):
+        # 如果自动磁盘配置不可用但是自动磁盘配置不为空，则抛出异常
         auto_disk_config_disabled = \
                 utils.is_auto_disk_config_disabled(auto_disk_config_img)
         if auto_disk_config_disabled and auto_disk_config:
@@ -738,8 +739,8 @@ class API(base.Base):
         strategy being performed.
         """
         """ 
-                            验证所有的输入参数； 
-                            返回要建立实例的各类信息； 
+        验证所有的输入参数； 
+        返回要建立实例的各类信息； 
         """        
         if availability_zone:
             available_zones = availability_zones.\
@@ -764,18 +765,20 @@ class API(base.Base):
                 base64.decodestring(user_data)
             except base64.binascii.Error:
                 raise exception.InstanceUserDataMalformed()
-
+        
+        # 检测数据有效性
         self._checks_for_create_and_rebuild(context, image_id, boot_meta,
                 instance_type, metadata, injected_files)
-
+        # 检测所需的安全组
         self._check_requested_secgroups(context, security_groups)
 
         # Note:  max_count is the number of instances requested by the user,
         # max_network_count is the maximum number of instances taking into
         # account any network quotas
+        # 检测最大的网络配额
         max_network_count = self._check_requested_networks(context,
                                      requested_networks, max_count)
-
+        
         kernel_id, ramdisk_id = self._handle_kernel_and_ramdisk(
                 context, kernel_id, ramdisk_id, boot_meta)
 
@@ -1056,8 +1059,8 @@ class API(base.Base):
         creation.
         """
         """ 
-                            验证所有的输入实例参数； 
-                            发送要运行实例（'run_instance'）的请求消息到远程调度器；  
+        验证所有的输入实例参数； 
+        发送要运行实例（'run_instance'）的请求消息到远程调度器；  
         """ 
 
         # Normalize and setup some parameters
@@ -1076,7 +1079,7 @@ class API(base.Base):
             image_id = None
             boot_meta = self._get_bdm_image_metadata(
                 context, block_device_mapping, legacy_bdm)
-        # 
+        # 检验自动磁盘配置
         self._check_auto_disk_config(image=boot_meta,
                                      auto_disk_config=auto_disk_config)
 
@@ -1539,7 +1542,7 @@ class API(base.Base):
             image_ref = sys_meta.get('image_base_image_ref')
             auto_disk_config_img = \
                 utils.get_auto_disk_config_from_instance(sys_meta=sys_meta)
-
+        # 确定自动磁盘配置有效
         self._ensure_auto_disk_config_is_valid(auto_disk_config_img,
                                                auto_disk_config,
                                                image_ref)
