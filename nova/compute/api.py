@@ -1374,16 +1374,37 @@ class API(base.Base):
         This is called by the scheduler after a location for the
         instance has been determined.
         """
+        """ 
+        为新的实例在数据库中建立新的条目，包括任何更新的表（如安全组等等）； 
+        """  
+          
+        #_populate_instance_for_create：建立一个新的实例的开端；  
+        #也就是首先执行instance = base_options；  
+        #然后再补充一些实例的相关信息到instance这个字典中；  
+        #返回设置好信息的实例字典给；                           
+        #期间还进行了一些操作，包括：  
+        #存储image镜像的属性信息，以便后面我们能够用到它们；  
+        #对目前这个image镜像实例的来源，即那个基础镜像的记录信息进行保存；
         self._populate_instance_for_create(context, instance, image, index,
                                            security_group, instance_type)
-
+        #确定实例的显示名称和主机名称（display_name和hostname）；  
         self._populate_instance_names(instance, num_instances)
-
+        #确定实例的关机和终止状态信息（shutdown_terminate）；  
+        #如果块设备映射（block_device_mapping）为真或者是镜像属性信息中的映射属性（image_properties.get('mappings')）为真  
+        #或者是镜像属性信息中的块设备映射属性（image_properties.get('block_device_mapping')）为真的时候，  
+        #实例的关机和终止状态instance['shutdown_terminate']就为假（是不是就是表示实例系统正在创建或者是运行中）； 
         instance.shutdown_terminate = shutdown_terminate
-
+        # ensure_default安全组在实例建立前会被调用；  
+        # ensure_default：确保context有一个安全组，如果没有就建立一个； 
         self.security_group_api.ensure_default(context)
         instance.create(context)
-
+        
+        # 如果要建立实例的最大数目大于1；  
+        # 这里涉及到一个一个请求生成多个实例的情况，这种情况下实例的命名相关遵循名称模板来进行；  
+        # 当一个请求创建多个实例的时候，multi_instance_display_name_template这个参数的设置能够使所有的实例都具有唯一的主机名和DISPLAY_NAME；  
+        # 默认的格式是'%(name)s-%(uuid)s'；  
+        # 我的理解是uuid应该是不同的；  
+        # 根据名称模板生成实例的相关名称属性，并更新实例的这个属性；
         if num_instances > 1:
             # NOTE(russellb) We wait until this spot to handle
             # multi_instance_display_name_template, because we need

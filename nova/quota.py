@@ -163,6 +163,8 @@ class DbQuotaDriver(object):
         # matches the one in the context, we use the quota_class from
         # the context, otherwise, we use the provided quota_class (if
         # any)
+        # 通过适当的类获取配额信息。如果project ID匹配context中的一个，那么使用context中的quota_class类，否则，使用所提供的quota_class类（如果有的话）。  
+        # 选取合适的类，为后面做准备；
         if project_id == context.project_id:
             quota_class = context.quota_class
         if quota_class:
@@ -270,9 +272,15 @@ class DbQuotaDriver(object):
                         will be returned.
         :param project_quotas: Quotas dictionary for the specified project.
         """
+        """ 
+        根据给定的资源列表，对于给定的对象进行磁盘配额检索；返回磁盘配额； 
+        """ 
+        # 对于一个给定的项目，检索它的所有的磁盘配额；  
+        # 根据project_id查询数据库中相应项目的数据库信息，获取其中的hard_limit值，也就是获取规定的资源最大限额值； 
         project_quotas = project_quotas or db.quota_get_all_by_project(
             context, project_id)
         project_usages = None
+        # 检索一个给定资源的当前的所有相关的使用情况；  
         if usages:
             project_usages = db.quota_usage_get_all_by_project(context,
                                                                project_id)
@@ -365,7 +373,7 @@ class DbQuotaDriver(object):
                         common user.
         :param project_quotas: Quotas dictionary for the specified project.
         """
-
+        # 筛选资源； 
         # Filter resources
         if has_sync:
             sync_filt = lambda x: hasattr(x, 'sync')
@@ -376,10 +384,12 @@ class DbQuotaDriver(object):
                              if k in desired and sync_filt(v))
 
         # Make sure we accounted for all of them...
+        # 确保所有磁盘配额资源都是已知的，否则引发异常，提示某些磁盘配额资源是未知的；  
         if len(keys) != len(sub_resources):
             unknown = desired - set(sub_resources.keys())
             raise exception.QuotaResourceUnknown(unknown=sorted(unknown))
-
+        
+        # 获取并返回磁盘配额；  
         if user_id:
             # Grab and return the quotas (without usages)
             quotas = self.get_user_quotas(context, sub_resources,

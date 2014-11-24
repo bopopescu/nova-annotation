@@ -2947,6 +2947,9 @@ def quota_get(context, project_id, resource, user_id=None):
 
 @require_context
 def quota_get_all_by_project_and_user(context, project_id, user_id):
+    """ 
+    根据project_id查询数据库中相应项目的数据库信息，获取其中的hard_limit值，也就是获取规定的某一资源最大限额值； 
+    """ 
     nova.context.authorize_project_context(context, project_id)
 
     user_quotas = model_query(context, models.ProjectUserQuota.resource,
@@ -3385,15 +3388,18 @@ def quota_reserve(context, resources, project_quotas, user_quotas, deltas,
                   expire, until_refresh, max_age, project_id=None,
                   user_id=None):
     elevated = context.elevated()
+    # 获取db_session的session；  
+    # get_session：返回一个SQLAlchemy session，若没有定义，则新建一个SQLAlchemy session；
     session = get_session()
     with session.begin():
-
+        # 获取context中的project_id； 
         if project_id is None:
             project_id = context.project_id
         if user_id is None:
             user_id = context.user_id
 
         # Get the current usages
+        # 从quota_usages表中获得当前工程的各种资源的使用情况；  
         project_usages, user_usages = _get_project_user_quota_usages(
                 context, session, project_id, user_id)
 
